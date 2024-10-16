@@ -19,6 +19,8 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
   late String organizer;
   late String eventType;
 
+  bool _isLoading = false; // Loading indicator for submission
+
   @override
   void initState() {
     super.initState();
@@ -96,32 +98,55 @@ class _CreateEditEventScreenState extends State<CreateEditEventScreen> {
                 onChanged: (value) => setState(() => eventType = value as String),
               ),
               SizedBox(height: 20),
-              ElevatedButton(
+              _isLoading
+                  ? CircularProgressIndicator()
+                  : ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     _formKey.currentState!.save();
-                    // Create or update event in Firestore
-                    if (widget.event == null) {
-                      // Create a new event
-                      await FirebaseFirestore.instance.collection('events').add({
-                        'title': title,
-                        'description': description,
-                        'location': location,
-                        'organizer': organizer,
-                        'eventType': eventType,
-                        'date': Timestamp.now(),
-                      });
-                    } else {
-                      // Update the existing event
-                      await FirebaseFirestore.instance.collection('events').doc(widget.event!.id).update({
-                        'title': title,
-                        'description': description,
-                        'location': location,
-                        'organizer': organizer,
-                        'eventType': eventType,
+                    setState(() {
+                      _isLoading = true; // Show loading indicator
+                    });
+
+                    try {
+                      // Create or update event in Firestore
+                      if (widget.event == null) {
+                        // Create a new event
+                        await FirebaseFirestore.instance.collection('events').add({
+                          'title': title,
+                          'description': description,
+                          'location': location,
+                          'organizer': organizer,
+                          'eventType': eventType,
+                          'date': Timestamp.now(),
+                        });
+                      } else {
+                        // Update the existing event
+                        await FirebaseFirestore.instance
+                            .collection('events')
+                            .doc(widget.event!.id)
+                            .update({
+                          'title': title,
+                          'description': description,
+                          'location': location,
+                          'organizer': organizer,
+                          'eventType': eventType,
+                        });
+                      }
+
+                      Navigator.pop(context); // Go back after success
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Event successfully saved')),
+                      );
+                    } catch (error) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to save event. Please try again.')),
+                      );
+                    } finally {
+                      setState(() {
+                        _isLoading = false; // Hide loading indicator
                       });
                     }
-                    Navigator.pop(context);
                   }
                 },
                 child: Text(widget.event == null ? 'Create Event' : 'Update Event'),

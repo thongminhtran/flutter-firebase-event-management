@@ -3,6 +3,9 @@ import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { Request, Response } from "express";
 
+admin.initializeApp();
+const db = admin.firestore();
+
 // Event interface
 interface Event {
     title: string;
@@ -14,15 +17,13 @@ interface Event {
     updatedAt: FirebaseFirestore.FieldValue;
 }
 
-admin.initializeApp();
-const db = admin.firestore();
-
 // Create Event
 export const createEvent = functions.https.onRequest(async (req: Request, res: Response) => {
     const { title, description, date, location, organizer, eventType } = req.body;
 
     if (!title || !description || !date || !location || !organizer || !eventType) {
-        res.status(400).send("Missing required fields");
+        functions.logger.error("Missing required fields in createEvent request");
+        res.status(400).json({ error: "Missing required fields" });
         return;
     }
 
@@ -39,8 +40,9 @@ export const createEvent = functions.https.onRequest(async (req: Request, res: R
 
         const eventRef = await db.collection("events").add(newEvent);
         res.status(201).json({ id: eventRef.id });
-    } catch (error: any) { // Ensure error typing
-        res.status(500).send(error.message);
+    } catch (error: any) {
+        functions.logger.error("Error creating event", error);
+        res.status(500).json({ error: "Failed to create event" });
     }
 });
 
@@ -51,7 +53,8 @@ export const getAllEvents = functions.https.onRequest(async (req: Request, res: 
         const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         res.status(200).json(events);
     } catch (error: any) {
-        res.status(500).send(error.message);
+        functions.logger.error("Error fetching all events", error);
+        res.status(500).json({ error: "Failed to fetch events" });
     }
 });
 
@@ -60,19 +63,20 @@ export const getEventById = functions.https.onRequest(async (req: Request, res: 
     const { id } = req.query;
 
     if (!id) {
-        res.status(400).send("Event ID is required");
+        res.status(400).json({ error: "Event ID is required" });
         return;
     }
 
     try {
         const eventDoc = await db.collection("events").doc(String(id)).get();
         if (!eventDoc.exists) {
-            res.status(404).send("Event not found");
+            res.status(404).json({ error: "Event not found" });
             return;
         }
         res.status(200).json({ id: eventDoc.id, ...eventDoc.data() });
     } catch (error: any) {
-        res.status(500).send(error.message);
+        functions.logger.error(`Error fetching event with ID: ${id}`, error);
+        res.status(500).json({ error: "Failed to fetch event" });
     }
 });
 
@@ -82,7 +86,7 @@ export const updateEvent = functions.https.onRequest(async (req: Request, res: R
     const { title, description, date, location, organizer, eventType } = req.body;
 
     if (!id) {
-        res.status(400).send("Event ID is required");
+        res.status(400).json({ error: "Event ID is required" });
         return;
     }
 
@@ -98,9 +102,10 @@ export const updateEvent = functions.https.onRequest(async (req: Request, res: R
         };
 
         await db.collection("events").doc(String(id)).update(updatedEvent);
-        res.status(200).send("Event updated");
+        res.status(200).json({ message: "Event updated" });
     } catch (error: any) {
-        res.status(500).send(error.message);
+        functions.logger.error(`Error updating event with ID: ${id}`, error);
+        res.status(500).json({ error: "Failed to update event" });
     }
 });
 
@@ -109,15 +114,16 @@ export const deleteEvent = functions.https.onRequest(async (req: Request, res: R
     const { id } = req.query;
 
     if (!id) {
-        res.status(400).send("Event ID is required");
+        res.status(400).json({ error: "Event ID is required" });
         return;
     }
 
     try {
         await db.collection("events").doc(String(id)).delete();
-        res.status(200).send("Event deleted");
+        res.status(200).json({ message: "Event deleted" });
     } catch (error: any) {
-        res.status(500).send(error.message);
+        functions.logger.error(`Error deleting event with ID: ${id}`, error);
+        res.status(500).json({ error: "Failed to delete event" });
     }
 });
 
@@ -125,32 +131,27 @@ export const deleteEvent = functions.https.onRequest(async (req: Request, res: R
 export const filterEvents = functions.https.onRequest(async (req: Request, res: Response): Promise<void> => {
     const { eventType, date } = req.query;
 
-    // Explicitly type the query as a FirebaseFirestore.Query
     let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = db.collection("events");
 
-    // Apply filters if they are present in the query
     if (eventType) {
         query = query.where("eventType", "==", String(eventType));
     }
 
     if (date) {
-        query = query.where(
-            "date",
-            "==",
-            admin.firestore.Timestamp.fromDate(new Date(String(date)))
-        );
+        query = query.where("date", "==", admin.firestore.Timestamp.fromDate(new Date(String(date))));
     }
 
     try {
-        const snapshot = await query.get();  // Execute the query
-        const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));  // Extract event data
-        res.status(200).json(events);  // Return the events in the response
+        const snapshot = await query.get();
+        const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        res.status(200).json(events);
     } catch (error: any) {
-        res.status(500).send(error.message);  // Handle any errors
+        functions.logger.error("Error filtering events", error);
+        res.status(500).json({ error: "Failed to filter events" });
     }
 });
 
-// Firestore Trigger to update `updatedAt` field automatically
+// Firestore Trigger to update `updatedAt` field
 export const updateTimestamp = functions.firestore
     .document("events/{eventId}")
     .onWrite((change, context) => {

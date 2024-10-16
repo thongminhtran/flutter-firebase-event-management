@@ -66,6 +66,14 @@ class _EventListScreenState extends State<EventListScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Failed to load events. Please try again.',
+                style: TextStyle(color: Colors.red),
+              ),
+            );
+          }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(child: Text('No events found'));
           }
@@ -112,7 +120,7 @@ class _EventListScreenState extends State<EventListScreen> {
               final event = filteredEvents[index];
               return Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Card(
                   elevation: 2.0,
                   child: ListTile(
@@ -126,7 +134,7 @@ class _EventListScreenState extends State<EventListScreen> {
                     title: Text(
                       event.title,
                       style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
                       event.eventType,
@@ -176,16 +184,18 @@ class _EventListScreenState extends State<EventListScreen> {
     );
   }
 
-  // Fetch events from Firestore
   Stream<List<Event>> fetchEvents() {
-    return FirebaseFirestore.instance.collection('events').snapshots().map(
-      (snapshot) {
-        return snapshot.docs.map((doc) => Event.fromFirestore(doc)).toList();
-      },
-    );
+    try {
+      return FirebaseFirestore.instance.collection('events').snapshots().map(
+            (snapshot) {
+          return snapshot.docs.map((doc) => Event.fromFirestore(doc)).toList();
+        },
+      );
+    } catch (e) {
+      throw Exception("Error fetching events");
+    }
   }
 
-  // Show delete confirmation dialog
   void _showDeleteConfirmation(BuildContext context, String eventId) {
     showDialog(
       context: context,
@@ -213,7 +223,6 @@ class _EventListScreenState extends State<EventListScreen> {
     );
   }
 
-  // Delete the event from Firestore
   void _deleteEvent(String eventId, BuildContext context) async {
     try {
       await FirebaseFirestore.instance
