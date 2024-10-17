@@ -4,24 +4,19 @@ import 'screens/event_list_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'providers/event_filter_provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load the environment variables
-  await dotenv.load(fileName: "../.env");
-
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY']!,
-        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN']!,
-        projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
-        appId: dotenv.env['FIREBASE_APP_ID']!,
-        measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID']!,
+        apiKey: "AIzaSyCBHK-5cX0hR9L5Tn7mRbFVMgmSksikAik",
+        authDomain: "pandahub-16778.firebaseapp.com",
+        projectId: "pandahub-16778",
+        storageBucket: "pandahub-16778.appspot.com",
+        messagingSenderId: "460622193586",
+        appId: "1:460622193586:web:b17df585e26acdae247aab",
+        measurementId: "G-YBQV10MFHP",
       ),
     );
   } else {
