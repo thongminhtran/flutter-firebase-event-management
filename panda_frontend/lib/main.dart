@@ -4,14 +4,9 @@ import 'screens/event_list_screen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'providers/event_filter_provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load the environment variables
-  await dotenv.load(fileName: "../.env");
-
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: FirebaseOptions(
