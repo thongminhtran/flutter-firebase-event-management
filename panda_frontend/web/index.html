@@ -1,16 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-  -->
   <base href="/flutter-firebase-event-management/">
 
   <meta charset="UTF-8">
@@ -29,15 +19,16 @@
   <title>panda_frontend</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Add Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-storage.js"></script>
+  <!-- Add Firebase SDKs (Modular) -->
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.6/firebase-app.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.6/firebase-firestore.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.6/firebase-auth.js";
+    import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.6/firebase-storage.js";
 
-  <script>
     // Your Firebase configuration
-    var firebaseConfig = {
+    const firebaseConfig = {
       apiKey: "AIzaSyCBHK-5cX0hR9L5Tn7mRbFVMgmSksikAik",
       authDomain: "pandahub-16778.firebaseapp.com",
       projectId: "pandahub-16778",
@@ -48,8 +39,12 @@
     };
 
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
   </script>
+
 </head>
 <body>
 <script src="flutter_bootstrap.js" async></script>
